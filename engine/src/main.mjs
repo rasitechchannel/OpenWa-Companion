@@ -400,6 +400,29 @@ async function handleCommand(cmd) {
       if (!sock) throw new Error('socket not ready')
       await sock.sendMessage(cmd.jid, { text: String(cmd.text || '') })
       break
+    case 'send-media': {
+      if (!sock) throw new Error('socket not ready')
+      const filePath = String(cmd.path || '')
+      const mimeType = String(cmd.mimeType || 'application/octet-stream')
+      if (!filePath || !fs.existsSync(filePath)) throw new Error('media file not found')
+      const data = fs.readFileSync(filePath)
+      const caption = String(cmd.caption || '')
+      if (mimeType.startsWith('image/')) {
+        await sock.sendMessage(cmd.jid, { image: data, mimetype: mimeType, caption })
+      } else if (mimeType.startsWith('video/')) {
+        await sock.sendMessage(cmd.jid, { video: data, mimetype: mimeType, caption })
+      } else if (mimeType.startsWith('audio/')) {
+        await sock.sendMessage(cmd.jid, { audio: data, mimetype: mimeType, ptt: false })
+      } else {
+        await sock.sendMessage(cmd.jid, {
+          document: data,
+          mimetype: mimeType,
+          fileName: path.basename(filePath),
+          caption,
+        })
+      }
+      break
+    }
     case 'send-reaction':
       if (!sock) throw new Error('socket not ready')
       await sock.sendMessage(cmd.jid, {
