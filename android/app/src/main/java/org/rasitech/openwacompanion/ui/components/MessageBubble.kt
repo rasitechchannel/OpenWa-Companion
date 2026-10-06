@@ -2,6 +2,7 @@ package org.rasitech.openwacompanion.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import org.rasitech.openwacompanion.domain.model.MessageItem
@@ -31,6 +33,7 @@ fun MessageBubble(
     message: MessageItem,
     selected: Boolean = false,
     onLongClick: () -> Unit = {},
+    onSwipeReply: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val wa = WaTheme.colors
@@ -55,6 +58,21 @@ fun MessageBubble(
                 if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
                 else androidx.compose.ui.graphics.Color.Transparent,
             )
+            .pointerInput(message.messageId) {
+                var totalDrag = 0f
+                detectHorizontalDragGestures(
+                    onDragStart = { totalDrag = 0f },
+                    onHorizontalDrag = { change, dragAmount ->
+                        if (dragAmount > 0f) totalDrag += dragAmount
+                        change.consume()
+                    },
+                    onDragEnd = {
+                        if (totalDrag >= 72.dp.toPx()) onSwipeReply()
+                        totalDrag = 0f
+                    },
+                    onDragCancel = { totalDrag = 0f },
+                )
+            }
             .combinedClickable(
                 onClick = {},
                 onLongClick = onLongClick,
