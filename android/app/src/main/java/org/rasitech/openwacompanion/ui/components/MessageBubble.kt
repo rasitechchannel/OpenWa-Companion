@@ -100,7 +100,7 @@ fun MessageBubble(
                     Text(
                         text = ticksFor(message.status),
                         style = MaterialTheme.typography.bodySmall,
-                        color = if ((message.status ?: 0) >= 3) wa.checkRead else wa.checkSent,
+                        color = if ((message.status ?: 0) >= 4) wa.checkRead else wa.checkSent,
                     )
                 }
             }
@@ -122,6 +122,6 @@ private fun contentLabel(type: String): String = when (type.lowercase(Locale.US)
 
 private fun ticksFor(status: Int?): String = when {
     status == null -> "✓"
-    status >= 2 -> "✓✓"
+    status >= 3 -> "✓✓"
     else -> "✓"
 }
