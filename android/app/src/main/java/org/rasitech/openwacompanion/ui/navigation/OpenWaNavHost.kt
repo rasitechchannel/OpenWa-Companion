@@ -41,6 +41,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.rasitech.openwacompanion.BuildConfig
 import org.rasitech.openwacompanion.ui.screens.chat.ConversationScreen
+import org.rasitech.openwacompanion.ui.screens.chat.NewChatScreen
 import org.rasitech.openwacompanion.ui.screens.home.CallsTab
 import org.rasitech.openwacompanion.ui.screens.home.ChatsTab
 import org.rasitech.openwacompanion.ui.screens.home.CommunitiesTab
@@ -98,6 +99,15 @@ fun OpenWaNavHost(
                 onOpenSettings = { nav.navigate(Routes.Settings.route) },
                 onOpenSearch = { nav.navigate(Routes.Search.route) },
                 onOpenAccounts = { nav.navigate(Routes.Session.route) },
+                onNewChat = { nav.navigate(Routes.NewChat.route) },
+            )
+        }
+        composable(Routes.NewChat.route) {
+            NewChatScreen(
+                onBack = { nav.popBackStack() },
+                onOpenChat = { chatId ->
+                    nav.navigate(Routes.Conversation.create(chatId))
+                },
             )
         }
         composable(
@@ -136,6 +146,7 @@ private fun HomeScaffold(
     onOpenSettings: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenAccounts: () -> Unit,
+    onNewChat: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf(
@@ -210,6 +221,7 @@ private fun HomeScaffold(
                     onOpenSettings = onOpenSettings,
                     onOpenSearch = onOpenSearch,
                     onOpenAccounts = onOpenAccounts,
+                    onNewChat = onNewChat,
                 )
                 1 -> UpdatesTab()
                 2 -> CommunitiesTab()
