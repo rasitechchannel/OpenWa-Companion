@@ -41,6 +41,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.VideoFile
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -73,6 +74,7 @@ import org.rasitech.openwacompanion.ui.components.WaAvatar
 import org.rasitech.openwacompanion.ui.theme.WaDimens
 import org.rasitech.openwacompanion.ui.theme.WaTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConversationScreen(
     chatId: String,
