@@ -202,7 +202,13 @@ class OpenWaRepository(context: Context) {
         )
     }
 
-    fun sendMedia(jid: String, filePath: String, mimeType: String, caption: String? = null) {
+    fun sendMedia(
+        jid: String,
+        filePath: String,
+        mimeType: String,
+        caption: String? = null,
+        ptt: Boolean = false,
+    ) {
         NodeBridge.writeCommand(
             app,
             JSONObject()
@@ -211,6 +217,7 @@ class OpenWaRepository(context: Context) {
                 .put("path", filePath)
                 .put("mimeType", mimeType)
                 .put("caption", caption ?: "")
+                .put("ptt", ptt)
                 .toString(),
         )
     }
