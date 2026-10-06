@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddComment
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.DonutLarge
 import androidx.compose.material.icons.outlined.Groups
@@ -61,10 +62,12 @@ fun ChatsTab(
     onOpenSearch: () -> Unit,
     onOpenAccounts: () -> Unit,
     onNewChat: () -> Unit,
+    onOpenArchived: () -> Unit,
 ) {
     val context = LocalContext.current
     val repo = remember { OpenWaRepository(context) }
     val chats by repo.observeChats(ACCOUNT).collectAsStateWithLifecycle(emptyList())
+    val archived by repo.observeArchivedChats(ACCOUNT).collectAsStateWithLifecycle(emptyList())
     val sync by repo.observeSync(ACCOUNT).collectAsStateWithLifecycle(null)
     val wa = WaTheme.colors
     var menuOpen by remember { mutableStateOf(false) }
@@ -87,7 +90,7 @@ fun ChatsTab(
                     text = "OpenWA",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = if (wa.isDark) MaterialTheme.colorScheme.onBackground else Color.White,
+                    color = if (wa.isDark) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.primary,
                     modifier = Modifier
                         .weight(1f)
                         .padding(start = 8.dp),
@@ -158,6 +161,36 @@ fun ChatsTab(
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
+                }
+            }
+
+            if (archived.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onOpenArchived)
+                        .padding(horizontal = WaDimens.ListHPad, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.Archive,
+                        contentDescription = null,
+                        tint = wa.secondaryText,
+                        modifier = Modifier.size(24.dp),
+                    )
+                    Text(
+                        "Archived",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.weight(1f).padding(start = 20.dp),
+                    )
+                    val unreadArchived = archived.sumOf { it.unreadCount }
+                    if (unreadArchived > 0) {
+                        Text(
+                            unreadArchived.toString(),
+                            color = wa.unread,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
                 }
             }
 
@@ -342,4 +375,4 @@ fun CallsTab() {
 
 @Composable
 private fun iconTint(isDark: Boolean): Color =
-    if (isDark) MaterialTheme.colorScheme.onBackground else Color.White
+    MaterialTheme.colorScheme.onBackground
