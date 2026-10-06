@@ -247,6 +247,7 @@ fun AccountSwitcherScreen(onBack: () -> Unit) {
     val repo = remember { OpenWaRepository(context) }
     val accounts by repo.observeAccounts().collectAsStateWithLifecycle(emptyList())
     var newId by remember { mutableStateOf("") }
+    val scope = rememberCoroutineScope()
     Scaffold(topBar = {
         TopAppBar(title = { Text("Accounts") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) } })
     }) { padding ->
@@ -257,12 +258,11 @@ fun AccountSwitcherScreen(onBack: () -> Unit) {
                     headlineContent = { Text(it.displayName ?: it.accountId) },
                     supportingContent = { Text(if (it.isActive) "Active" else "Inactive") },
                     modifier = Modifier.clickable {
-                        // switch is suspend — fire via rememberCoroutineScope in production; simplified:
+                        scope.launch { repo.switchAccount(it.accountId) }
                     },
                 )
             }
             OutlinedTextField(value = newId, onValueChange = { newId = it }, label = { Text("New account id") }, modifier = Modifier.fillMaxWidth())
-            val scope = rememberCoroutineScope()
             Button(onClick = {
                 if (newId.isNotBlank()) scope.launch { repo.switchAccount(newId.trim()) }
             }) { Text("Add / switch account") }
