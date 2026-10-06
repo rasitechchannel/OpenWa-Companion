@@ -32,6 +32,7 @@ import java.util.Locale
 fun MessageBubble(
     message: MessageItem,
     selected: Boolean = false,
+    onClick: () -> Unit = {},
     onLongClick: () -> Unit = {},
     onSwipeReply: () -> Unit = {},
     modifier: Modifier = Modifier,
@@ -74,7 +75,7 @@ fun MessageBubble(
                 )
             }
             .combinedClickable(
-                onClick = {},
+                onClick = onClick,
                 onLongClick = onLongClick,
             )
             .padding(horizontal = 4.dp, vertical = 1.dp),
