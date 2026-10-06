@@ -52,6 +52,25 @@ class OpenWaRepository(context: Context) {
             }
         }
 
+
+    fun observeArchivedChats(accountId: String): Flow<List<ChatSummary>> =
+        db.chats().observeArchived(accountId).map { list ->
+            list.map { row ->
+                ChatSummary(
+                    accountId = row.accountId,
+                    chatId = row.chatId,
+                    title = ChatPresentation.displayTitle(row.title, row.chatId),
+                    lastMessagePreview = ChatPresentation.cleanLabel(row.lastMessagePreview),
+                    lastTimestamp = ChatPresentation.normalizeEpochMs(row.lastTimestamp),
+                    unreadCount = row.unreadCount,
+                    pinned = row.pinned > 0,
+                    archived = true,
+                    mutedUntil = row.mutedUntil,
+                    isGroup = row.isGroup,
+                )
+            }
+        }
+
     fun observeMessages(accountId: String, chatId: String): Flow<List<MessageItem>> =
         db.messages().observeMessages(accountId, chatId).map { list ->
             list.map {
@@ -71,6 +90,12 @@ class OpenWaRepository(context: Context) {
             }
         }
 
+    fun observeReceipts(accountId: String, messageId: String) =
+        db.receipts().observe(accountId, messageId)
+
+    fun observeReactions(accountId: String, messageId: String) =
+        db.reactions().observe(accountId, messageId)
+
     fun observeCalls(accountId: String): Flow<List<CallItem>> =
         db.calls().observe(accountId).map { list ->
             list.map {
@@ -89,6 +114,10 @@ class OpenWaRepository(context: Context) {
 
     fun observeNewsletters(accountId: String) = db.newsletters().observe(accountId)
     fun observeGroups(accountId: String) = db.groups().observe(accountId)
+    fun observeGroupParticipants(accountId: String, groupId: String) =
+        db.groupParticipants().observe(accountId, groupId)
+    fun observeJoinRequests(accountId: String, groupId: String) =
+        db.joinRequests().observe(accountId, groupId)
     fun observeJournal(accountId: String) = db.eventJournal().observeRecent(accountId)
     fun observeSync(accountId: String) = db.syncState().observe(accountId)
     fun observeSettings(accountId: String) = db.settings().observe(accountId)
@@ -117,14 +146,69 @@ class OpenWaRepository(context: Context) {
     suspend fun searchMessages(accountId: String, query: String) =
         db.messages().search(accountId, query)
 
-    fun sendText(jid: String, text: String) {
+    fun sendText(jid: String, text: String, quoted: MessageItem? = null) {
+        val payload = JSONObject()
+            .put("type", "send-text")
+            .put("jid", jid)
+            .put("text", text)
+        quoted?.let {
+            payload.put(
+                "quoted",
+                JSONObject()
+                    .put("id", it.messageId)
+                    .put("remoteJid", it.chatId)
+                    .put("fromMe", it.fromMe)
+                    .put("participant", it.senderJid ?: JSONObject.NULL)
+                    .put("text", it.text ?: ""),
+            )
+        }
+        NodeBridge.writeCommand(app, payload.toString())
+    }
+
+    fun sendReaction(message: MessageItem, emoji: String) {
         NodeBridge.writeCommand(
             app,
-            JSONObject().put("type", "send-text").put("jid", jid).put("text", text).toString(),
+            JSONObject()
+                .put("type", "send-reaction")
+                .put("jid", message.chatId)
+                .put("text", emoji)
+                .put(
+                    "key",
+                    JSONObject()
+                        .put("id", message.messageId)
+                        .put("remoteJid", message.chatId)
+                        .put("fromMe", message.fromMe)
+                        .put("participant", message.senderJid ?: JSONObject.NULL),
+                )
+                .toString(),
         )
     }
 
-    fun sendMedia(jid: String, filePath: String, mimeType: String, caption: String? = null) {
+    fun deleteMessage(message: MessageItem) {
+        NodeBridge.writeCommand(
+            app,
+            JSONObject()
+                .put("type", "delete-message")
+                .put("jid", message.chatId)
+                .put(
+                    "key",
+                    JSONObject()
+                        .put("id", message.messageId)
+                        .put("remoteJid", message.chatId)
+                        .put("fromMe", message.fromMe)
+                        .put("participant", message.senderJid ?: JSONObject.NULL),
+                )
+                .toString(),
+        )
+    }
+
+    fun sendMedia(
+        jid: String,
+        filePath: String,
+        mimeType: String,
+        caption: String? = null,
+        ptt: Boolean = false,
+    ) {
         NodeBridge.writeCommand(
             app,
             JSONObject()
@@ -133,6 +217,7 @@ class OpenWaRepository(context: Context) {
                 .put("path", filePath)
                 .put("mimeType", mimeType)
                 .put("caption", caption ?: "")
+                .put("ptt", ptt)
                 .toString(),
         )
     }

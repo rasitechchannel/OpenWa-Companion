@@ -40,8 +40,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import org.rasitech.openwacompanion.BuildConfig
+import org.rasitech.openwacompanion.ui.screens.chat.ArchivedChatsScreen
+import org.rasitech.openwacompanion.ui.screens.chat.ChatInfoScreen
 import org.rasitech.openwacompanion.ui.screens.chat.ConversationScreen
 import org.rasitech.openwacompanion.ui.screens.chat.NewChatScreen
+import org.rasitech.openwacompanion.ui.screens.chat.MessageInfoScreen
+import org.rasitech.openwacompanion.ui.screens.chat.MediaViewerScreen
 import org.rasitech.openwacompanion.ui.screens.home.CallsTab
 import org.rasitech.openwacompanion.ui.screens.home.ChatsTab
 import org.rasitech.openwacompanion.ui.screens.home.CommunitiesTab
@@ -49,11 +53,14 @@ import org.rasitech.openwacompanion.ui.screens.home.UpdatesTab
 import org.rasitech.openwacompanion.ui.screens.onboarding.OnboardingScreen
 import org.rasitech.openwacompanion.ui.screens.onboarding.SplashScreen
 import org.rasitech.openwacompanion.ui.screens.settings.AboutScreen
+import org.rasitech.openwacompanion.ui.screens.settings.AccountSettingsScreen
+import org.rasitech.openwacompanion.ui.screens.settings.ChatsSettingsScreen
 import org.rasitech.openwacompanion.ui.screens.settings.AccountSwitcherScreen
 import org.rasitech.openwacompanion.ui.screens.settings.AppLockScreen
 import org.rasitech.openwacompanion.ui.screens.settings.DiagnosticsScreen
 import org.rasitech.openwacompanion.ui.screens.settings.LicensesScreen
 import org.rasitech.openwacompanion.ui.screens.settings.OpenSourceScreen
+import org.rasitech.openwacompanion.ui.screens.settings.NotificationSettingsScreen
 import org.rasitech.openwacompanion.ui.screens.settings.PrivacyScreen
 import org.rasitech.openwacompanion.ui.screens.settings.SearchScreen
 import org.rasitech.openwacompanion.ui.screens.settings.SessionScreen
@@ -100,6 +107,7 @@ fun OpenWaNavHost(
                 onOpenSearch = { nav.navigate(Routes.Search.route) },
                 onOpenAccounts = { nav.navigate(Routes.Session.route) },
                 onNewChat = { nav.navigate(Routes.NewChat.route) },
+                onOpenArchived = { nav.navigate(Routes.Archived.route) },
             )
         }
         composable(Routes.NewChat.route) {
@@ -110,15 +118,72 @@ fun OpenWaNavHost(
                 },
             )
         }
+        composable(Routes.Archived.route) {
+            ArchivedChatsScreen(
+                onBack = { nav.popBackStack() },
+                onOpenChat = { chatId -> nav.navigate(Routes.Conversation.create(chatId)) },
+            )
+        }
         composable(
             Routes.Conversation.route,
             arguments = listOf(navArgument("chatId") { type = NavType.StringType }),
         ) { entry ->
             val chatId = entry.arguments?.getString("chatId").orEmpty()
-            ConversationScreen(chatId = chatId, onBack = { nav.popBackStack() })
+            ConversationScreen(
+                chatId = chatId,
+                onBack = { nav.popBackStack() },
+                onOpenInfo = { nav.navigate(Routes.ChatInfo.create(chatId)) },
+                onOpenMessageInfo = { messageId ->
+                    nav.navigate(Routes.MessageInfo.create(chatId, messageId))
+                },
+                onOpenMedia = { messageId ->
+                    nav.navigate(Routes.MediaViewer.create(chatId, messageId))
+                },
+            )
+        }
+        composable(
+            Routes.MediaViewer.route,
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("messageId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            MediaViewerScreen(
+                chatId = entry.arguments?.getString("chatId").orEmpty(),
+                messageId = entry.arguments?.getString("messageId").orEmpty(),
+                onBack = { nav.popBackStack() },
+            )
+        }
+        composable(
+            Routes.MessageInfo.route,
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("messageId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            MessageInfoScreen(
+                chatId = entry.arguments?.getString("chatId").orEmpty(),
+                messageId = entry.arguments?.getString("messageId").orEmpty(),
+                onBack = { nav.popBackStack() },
+            )
+        }
+        composable(
+            Routes.ChatInfo.route,
+            arguments = listOf(navArgument("chatId") { type = NavType.StringType }),
+        ) { entry ->
+            ChatInfoScreen(
+                chatId = entry.arguments?.getString("chatId").orEmpty(),
+                onBack = { nav.popBackStack() },
+            )
         }
         composable(Routes.Settings.route) {
             SettingsScreen(onBack = { nav.popBackStack() }, onOpen = { route -> nav.navigate(route) })
+        }
+        composable(Routes.AccountSettings.route) {
+            AccountSettingsScreen(onBack = { nav.popBackStack() }, onOpen = { route -> nav.navigate(route) })
+        }
+        composable(Routes.ChatsSettings.route) {
+            ChatsSettingsScreen(onBack = { nav.popBackStack() }, onOpen = { route -> nav.navigate(route) })
         }
         composable(Routes.About.route) { AboutScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.Licenses.route) { LicensesScreen(onBack = { nav.popBackStack() }) }
@@ -126,7 +191,7 @@ fun OpenWaNavHost(
         composable(Routes.Privacy.route) { PrivacyScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.Storage.route) { StorageScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.Notifications.route) {
-            SettingsScreen(onBack = { nav.popBackStack() }, onOpen = {}, titleOverride = "Notifications")
+            NotificationSettingsScreen(onBack = { nav.popBackStack() })
         }
         composable(Routes.AppLock.route) { AppLockScreen(onBack = { nav.popBackStack() }) }
         composable(Routes.Session.route) { SessionScreen(onBack = { nav.popBackStack() }) }
@@ -147,6 +212,7 @@ private fun HomeScaffold(
     onOpenSearch: () -> Unit,
     onOpenAccounts: () -> Unit,
     onNewChat: () -> Unit,
+    onOpenArchived: () -> Unit,
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf(
@@ -222,6 +288,7 @@ private fun HomeScaffold(
                     onOpenSearch = onOpenSearch,
                     onOpenAccounts = onOpenAccounts,
                     onNewChat = onNewChat,
+                    onOpenArchived = onOpenArchived,
                 )
                 1 -> UpdatesTab()
                 2 -> CommunitiesTab()
