@@ -117,10 +117,59 @@ class OpenWaRepository(context: Context) {
     suspend fun searchMessages(accountId: String, query: String) =
         db.messages().search(accountId, query)
 
-    fun sendText(jid: String, text: String) {
+    fun sendText(jid: String, text: String, quoted: MessageItem? = null) {
+        val payload = JSONObject()
+            .put("type", "send-text")
+            .put("jid", jid)
+            .put("text", text)
+        quoted?.let {
+            payload.put(
+                "quoted",
+                JSONObject()
+                    .put("id", it.messageId)
+                    .put("remoteJid", it.chatId)
+                    .put("fromMe", it.fromMe)
+                    .put("participant", it.senderJid ?: JSONObject.NULL)
+                    .put("text", it.text ?: ""),
+            )
+        }
+        NodeBridge.writeCommand(app, payload.toString())
+    }
+
+    fun sendReaction(message: MessageItem, emoji: String) {
         NodeBridge.writeCommand(
             app,
-            JSONObject().put("type", "send-text").put("jid", jid).put("text", text).toString(),
+            JSONObject()
+                .put("type", "send-reaction")
+                .put("jid", message.chatId)
+                .put("text", emoji)
+                .put(
+                    "key",
+                    JSONObject()
+                        .put("id", message.messageId)
+                        .put("remoteJid", message.chatId)
+                        .put("fromMe", message.fromMe)
+                        .put("participant", message.senderJid ?: JSONObject.NULL),
+                )
+                .toString(),
+        )
+    }
+
+    fun deleteMessage(message: MessageItem) {
+        NodeBridge.writeCommand(
+            app,
+            JSONObject()
+                .put("type", "delete-message")
+                .put("jid", message.chatId)
+                .put(
+                    "key",
+                    JSONObject()
+                        .put("id", message.messageId)
+                        .put("remoteJid", message.chatId)
+                        .put("fromMe", message.fromMe)
+                        .put("participant", message.senderJid ?: JSONObject.NULL),
+                )
+                .toString(),
         )
     }
 
