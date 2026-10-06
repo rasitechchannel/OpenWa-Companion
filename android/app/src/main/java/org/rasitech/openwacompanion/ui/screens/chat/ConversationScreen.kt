@@ -1,5 +1,10 @@
 package org.rasitech.openwacompanion.ui.screens.chat
 
+import android.content.Context
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,10 +30,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.AttachFile
-import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.Mic
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -49,6 +52,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.io.File
 import org.rasitech.openwacompanion.data.repo.OpenWaRepository
 import org.rasitech.openwacompanion.ui.components.MessageBubble
 import org.rasitech.openwacompanion.ui.components.WaAvatar
@@ -66,6 +70,25 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val wa = WaTheme.colors
+
+    val mediaPicker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent(),
+    ) { uri ->
+        if (uri != null) {
+            val prepared = copyToPrivateAttachment(context, uri)
+            if (prepared != null) {
+                repo.sendMedia(
+                    jid = chatId,
+                    filePath = prepared.first,
+                    mimeType = prepared.second,
+                    caption = draft.trim().ifBlank { null },
+                )
+                draft = ""
+            } else {
+                Toast.makeText(context, "Could not read that attachment.", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -86,7 +109,7 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
                 .fillMaxWidth()
                 .height(WaDimens.TopBarHeight)
                 .background(wa.appBar)
-                .padding(end = 4.dp),
+                .padding(end = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
@@ -102,13 +125,13 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(onClick = { }) {
-                Icon(Icons.Outlined.MoreVert, contentDescription = "More", tint = barIcon(wa.isDark))
-            }
         }
 
         if (messages.isEmpty()) {
-            Box(modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+            Box(
+                modifier = Modifier.weight(1f).fillMaxWidth().padding(24.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Text(
                     "No messages yet. Waiting for sync or your first send.",
                     color = wa.secondaryText,
@@ -162,19 +185,14 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
                         unfocusedIndicatorColor = Color.Transparent,
                     ),
                 )
-                Icon(
-                    Icons.Outlined.AttachFile,
-                    contentDescription = "Attach",
-                    tint = wa.secondaryText,
-                    modifier = Modifier.size(22.dp),
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    Icons.Outlined.CameraAlt,
-                    contentDescription = "Camera",
-                    tint = wa.secondaryText,
-                    modifier = Modifier.padding(end = 12.dp).size(22.dp),
-                )
+                IconButton(onClick = { mediaPicker.launch("*/*") }) {
+                    Icon(
+                        Icons.Outlined.AttachFile,
+                        contentDescription = "Attach",
+                        tint = wa.secondaryText,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(6.dp))
             Box(
@@ -189,6 +207,12 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
                         if (draft.isNotBlank()) {
                             repo.sendText(chatId, draft.trim())
                             draft = ""
+                        } else {
+                            Toast.makeText(
+                                context,
+                                "Voice note recording is not available in this build yet.",
+                                Toast.LENGTH_SHORT,
+                            ).show()
                         }
                     },
                 ) {
@@ -201,6 +225,25 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
             }
         }
     }
+}
+
+private fun copyToPrivateAttachment(context: Context, uri: Uri): Pair<String, String>? {
+    return runCatching {
+        val mime = context.contentResolver.getType(uri) ?: "application/octet-stream"
+        val ext = when {
+            mime.startsWith("image/") -> ".jpg"
+            mime.startsWith("video/") -> ".mp4"
+            mime.startsWith("audio/") -> ".audio"
+            else -> ".bin"
+        }
+        val dir = File(context.cacheDir, "outgoing")
+        if (!dir.exists()) dir.mkdirs()
+        val file = File(dir, "attachment-" + System.currentTimeMillis() + ext)
+        context.contentResolver.openInputStream(uri)?.use { input ->
+            file.outputStream().use { output -> input.copyTo(output) }
+        } ?: return null
+        file.absolutePath to mime
+    }.getOrNull()
 }
 
 @Composable

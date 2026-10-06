@@ -5,6 +5,7 @@ sealed class Routes(val route: String) {
     data object Onboarding : Routes("onboarding")
     data object Home : Routes("home")
     data object Search : Routes("search")
+    data object NewChat : Routes("new-chat")
     data object Conversation : Routes("chat/{chatId}") {
         fun create(chatId: String) = "chat/$chatId"
     }
