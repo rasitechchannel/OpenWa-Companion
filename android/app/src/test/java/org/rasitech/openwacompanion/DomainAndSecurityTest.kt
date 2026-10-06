@@ -26,14 +26,11 @@ class DomainAndSecurityTest {
 
     @Test
     fun coverageMatrixHasNoTodo() {
-        val matrix = java.io.File("../../../../../../docs/BAILEYS_COVERAGE_MATRIX.md")
-        // Unit tests run from module; also check packaged absolute fallback.
-        val file = listOf(
-            java.io.File("E:/OpenWA/docs/BAILEYS_COVERAGE_MATRIX.md"),
-            java.io.File("../docs/BAILEYS_COVERAGE_MATRIX.md"),
-            matrix,
-        ).firstOrNull { it.exists() }
-        assertTrue("coverage matrix missing", file != null && file!!.exists())
+        val start = java.io.File(System.getProperty("user.dir")).absoluteFile
+        val file = generateSequence(start) { current -> current.parentFile }
+            .map { root -> java.io.File(root, "docs/BAILEYS_COVERAGE_MATRIX.md") }
+            .firstOrNull { candidate -> candidate.isFile }
+        assertTrue("coverage matrix missing from repo tree", file != null)
         val text = file!!.readText()
         assertTrue(text.contains("TODO_REMAINING: 0"))
         assertEquals(false, Regex("""\|\s*TODO\s*\|""").containsMatchIn(text))
