@@ -293,6 +293,11 @@ fun ConversationScreen(
                             selectedMessage = msg
                             showReactionPicker = false
                         },
+                        onSwipeReply = {
+                            replyTo = msg
+                            selectedMessage = null
+                            showReactionPicker = false
+                        },
                     )
                 }
             }
