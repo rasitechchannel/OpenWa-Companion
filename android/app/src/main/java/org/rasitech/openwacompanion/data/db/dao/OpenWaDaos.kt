@@ -30,6 +30,9 @@ interface ChatDao {
     @Query("SELECT * FROM chats WHERE accountId = :accountId AND archived = 0 ORDER BY pinned DESC, lastTimestamp DESC")
     fun observeChats(accountId: String): Flow<List<ChatEntity>>
 
+    @Query("SELECT * FROM chats WHERE accountId = :accountId AND archived = 1 ORDER BY lastTimestamp DESC")
+    fun observeArchived(accountId: String): Flow<List<ChatEntity>>
+
     @Query("SELECT * FROM chats WHERE accountId = :accountId AND chatId = :chatId LIMIT 1")
     suspend fun get(accountId: String, chatId: String): ChatEntity?
 

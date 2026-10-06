@@ -27,9 +27,9 @@ fun SettingsScreen(
 ) {
     val wa = org.rasitech.openwacompanion.ui.theme.WaTheme.colors
     val rows = buildList {
-        add(SettingsRow("Account", "Security notifications, log out", Routes.AccountSwitcher.route))
+        add(SettingsRow("Account", "Accounts, linked session, security", Routes.AccountSettings.route))
         add(SettingsRow("Privacy", "Blocked accounts, disappearing messages", Routes.Privacy.route))
-        add(SettingsRow("Chats", "Theme, wallpapers, chat history", Routes.Storage.route))
+        add(SettingsRow("Chats", "Theme, archived chats, chat preferences", Routes.ChatsSettings.route))
         add(SettingsRow("Notifications", "Message, group & call tones", Routes.Notifications.route))
         add(SettingsRow("Storage and data", "Network usage, auto-download", Routes.Storage.route))
         add(SettingsRow("App lock", "Biometric / device credential", Routes.AppLock.route))
@@ -152,13 +152,67 @@ fun PrivacyScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val repo = remember { OpenWaRepository(context) }
     val settings by repo.observeSettings("default").collectAsStateWithLifecycle(emptyList())
+    val wa = org.rasitech.openwacompanion.ui.theme.WaTheme.colors
+    LaunchedEffect(Unit) { repo.fetchPrivacy() }
+
+    val privacyItems = remember(settings) {
+        val raw = settings.firstOrNull { it.key == "privacy" }?.valueJson
+        runCatching {
+            val outer = org.json.JSONObject(raw ?: "{}")
+            val privacy = outer.optJSONObject("privacy") ?: outer
+            privacy.keys().asSequence().map { key ->
+                privacyLabel(key) to privacy.opt(key)?.toString().orEmpty()
+            }.toList().sortedBy { it.first }
+        }.getOrDefault(emptyList())
+    }
+
     Scaffold(topBar = {
-        TopAppBar(title = { Text("Privacy") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) } })
+        TopAppBar(
+            title = { Text("Privacy") },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                }
+            },
+        )
     }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Button(onClick = { repo.fetchPrivacy() }) { Text("Refresh privacy from engine") }
-            if (settings.isEmpty()) Text("No privacy payload captured yet.")
-            else settings.forEach { Text(it.key + ": " + it.valueJson) }
+        LazyColumn(modifier = Modifier.padding(padding)) {
+            item {
+                ListItem(
+                    headlineContent = { Text("Privacy settings") },
+                    supportingContent = {
+                        Text(
+                            "Synced from the linked account. Some settings can only be changed on the primary phone.",
+                            color = wa.secondaryText,
+                        )
+                    },
+                    trailingContent = {
+                        TextButton(onClick = { repo.fetchPrivacy() }) { Text("Refresh") }
+                    },
+                )
+                HorizontalDivider()
+            }
+            if (privacyItems.isEmpty()) {
+                item {
+                    ListItem(
+                        headlineContent = { Text("Waiting for privacy settings") },
+                        supportingContent = {
+                            Text(
+                                "Link the account and refresh to load privacy state.",
+                                color = wa.secondaryText,
+                            )
+                        },
+                    )
+                }
+            } else {
+                items(privacyItems) { item ->
+                    ListItem(
+                        headlineContent = { Text(item.first) },
+                        supportingContent = { Text(item.second, color = wa.secondaryText) },
+                    )
+                    HorizontalDivider()
+                }
+            }
         }
     }
 }
@@ -167,13 +221,53 @@ fun PrivacyScreen(onBack: () -> Unit) {
 @Composable
 fun StorageScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    var cacheBytes by remember { mutableLongStateOf(directorySize(context.cacheDir)) }
+    val wa = org.rasitech.openwacompanion.ui.theme.WaTheme.colors
+
     Scaffold(topBar = {
-        TopAppBar(title = { Text("Storage") }, navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Outlined.ArrowBack, null) } })
+        TopAppBar(
+            title = { Text("Storage and data") },
+            navigationIcon = {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                }
+            },
+        )
     }) { padding ->
-        Column(modifier = Modifier.padding(padding).padding(16.dp)) {
-            Text("Media cache: " + context.cacheDir.absolutePath)
-            Text("Auth (no backup): " + context.noBackupFilesDir.absolutePath)
-            Text("Sensitive backup is excluded via data extraction rules.")
+        Column(modifier = Modifier.padding(padding)) {
+            ListItem(
+                headlineContent = { Text("Temporary media cache") },
+                supportingContent = {
+                    Text(
+                        formatBytes(cacheBytes) + " used by previews and outgoing attachments",
+                        color = wa.secondaryText,
+                    )
+                },
+            )
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text("Clear cache") },
+                supportingContent = {
+                    Text(
+                        "Removes temporary files only. Messages and companion credentials are kept.",
+                        color = wa.secondaryText,
+                    )
+                },
+                modifier = Modifier.clickable {
+                    context.cacheDir.listFiles()?.forEach { it.deleteRecursively() }
+                    cacheBytes = directorySize(context.cacheDir)
+                },
+            )
+            HorizontalDivider()
+            ListItem(
+                headlineContent = { Text("Credential protection") },
+                supportingContent = {
+                    Text(
+                        "Companion credentials stay in app-private storage and are excluded from ordinary backup.",
+                        color = wa.secondaryText,
+                    )
+                },
+            )
         }
     }
 }
@@ -313,3 +407,21 @@ fun SearchScreen(onBack: () -> Unit) {
         }
     }
 }
+
+private fun directorySize(file: java.io.File): Long =
+    if (!file.exists()) 0L
+    else if (file.isFile) file.length()
+    else file.listFiles()?.sumOf(::directorySize) ?: 0L
+
+private fun formatBytes(bytes: Long): String = when {
+    bytes < 1024L -> bytes.toString() + " B"
+    bytes < 1024L * 1024L -> String.format(java.util.Locale.US, "%.1f KB", bytes / 1024.0)
+    bytes < 1024L * 1024L * 1024L -> String.format(java.util.Locale.US, "%.1f MB", bytes / (1024.0 * 1024.0))
+    else -> String.format(java.util.Locale.US, "%.1f GB", bytes / (1024.0 * 1024.0 * 1024.0))
+}
+
+private fun privacyLabel(key: String): String =
+    key.replace(Regex("([a-z])([A-Z])"), "$1 $2")
+        .replace('_', ' ')
+        .trim()
+        .replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }

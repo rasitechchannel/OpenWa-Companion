@@ -24,7 +24,7 @@ object WaColor {
 
     // Light
     val LightBg = Color(0xFFFFFFFF)
-    val LightAppBar = Color(0xFF008069)
+    val LightAppBar = Color(0xFFFFFFFF)
     val LightSurface = Color(0xFFFFFFFF)
     val LightSearch = Color(0xFFF0F2F5)
     val LightOutgoing = Color(0xFFD9FDD3)
