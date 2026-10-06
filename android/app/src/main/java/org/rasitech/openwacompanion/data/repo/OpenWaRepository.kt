@@ -90,6 +90,12 @@ class OpenWaRepository(context: Context) {
             }
         }
 
+    fun observeReceipts(accountId: String, messageId: String) =
+        db.receipts().observe(accountId, messageId)
+
+    fun observeReactions(accountId: String, messageId: String) =
+        db.reactions().observe(accountId, messageId)
+
     fun observeCalls(accountId: String): Flow<List<CallItem>> =
         db.calls().observe(accountId).map { list ->
             list.map {
