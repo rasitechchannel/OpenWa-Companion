@@ -52,6 +52,25 @@ class OpenWaRepository(context: Context) {
             }
         }
 
+
+    fun observeArchivedChats(accountId: String): Flow<List<ChatSummary>> =
+        db.chats().observeArchived(accountId).map { list ->
+            list.map { row ->
+                ChatSummary(
+                    accountId = row.accountId,
+                    chatId = row.chatId,
+                    title = ChatPresentation.displayTitle(row.title, row.chatId),
+                    lastMessagePreview = ChatPresentation.cleanLabel(row.lastMessagePreview),
+                    lastTimestamp = ChatPresentation.normalizeEpochMs(row.lastTimestamp),
+                    unreadCount = row.unreadCount,
+                    pinned = row.pinned > 0,
+                    archived = true,
+                    mutedUntil = row.mutedUntil,
+                    isGroup = row.isGroup,
+                )
+            }
+        }
+
     fun observeMessages(accountId: String, chatId: String): Flow<List<MessageItem>> =
         db.messages().observeMessages(accountId, chatId).map { list ->
             list.map {
@@ -89,6 +108,10 @@ class OpenWaRepository(context: Context) {
 
     fun observeNewsletters(accountId: String) = db.newsletters().observe(accountId)
     fun observeGroups(accountId: String) = db.groups().observe(accountId)
+    fun observeGroupParticipants(accountId: String, groupId: String) =
+        db.groupParticipants().observe(accountId, groupId)
+    fun observeJoinRequests(accountId: String, groupId: String) =
+        db.joinRequests().observe(accountId, groupId)
     fun observeJournal(accountId: String) = db.eventJournal().observeRecent(accountId)
     fun observeSync(accountId: String) = db.syncState().observe(accountId)
     fun observeSettings(accountId: String) = db.settings().observe(accountId)
