@@ -81,6 +81,7 @@ fun ConversationScreen(
     onBack: () -> Unit,
     onOpenInfo: () -> Unit = {},
     onOpenMessageInfo: (String) -> Unit = {},
+    onOpenMedia: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val repo = remember { OpenWaRepository(context) }
@@ -291,6 +292,9 @@ fun ConversationScreen(
                     MessageBubble(
                         message = msg,
                         selected = selectedMessage?.messageId == msg.messageId,
+                        onClick = {
+                            if (!msg.mediaPath.isNullOrBlank()) onOpenMedia(msg.messageId)
+                        },
                         onLongClick = {
                             selectedMessage = msg
                             showReactionPicker = false
