@@ -1,6 +1,7 @@
 package org.rasitech.openwacompanion.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,6 +29,8 @@ import java.util.Locale
 @Composable
 fun MessageBubble(
     message: MessageItem,
+    selected: Boolean = false,
+    onLongClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val wa = WaTheme.colors
@@ -43,14 +46,20 @@ fun MessageBubble(
     val time = if (ts > 0) {
         SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
     } else ""
-    val body = message.text?.takeIf { it.isNotBlank() }
-        ?: when {
-            message.mediaPath != null -> contentLabel(message.contentType)
-            else -> contentLabel(message.contentType)
-        }
+    val body = message.text?.takeIf { it.isNotBlank() } ?: contentLabel(message.contentType)
 
     Box(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .background(
+                if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                else androidx.compose.ui.graphics.Color.Transparent,
+            )
+            .combinedClickable(
+                onClick = {},
+                onLongClick = onLongClick,
+            )
+            .padding(horizontal = 4.dp, vertical = 1.dp),
         contentAlignment = if (fromMe) Alignment.CenterEnd else Alignment.CenterStart,
     ) {
         Column(
@@ -62,10 +71,10 @@ fun MessageBubble(
         ) {
             message.quotedId?.let {
                 Text(
-                    text = "Reply",
+                    text = "Reply to message",
                     style = MaterialTheme.typography.labelMedium,
                     color = wa.link,
-                    modifier = Modifier.padding(bottom = 2.dp),
+                    modifier = Modifier.padding(bottom = 3.dp),
                 )
             }
             Text(
@@ -107,13 +116,12 @@ private fun contentLabel(type: String): String = when (type.lowercase(Locale.US)
     "document", "documentmessage" -> "Document"
     "sticker", "stickermessage" -> "Sticker"
     "reaction", "reactionmessage" -> "Reaction"
+    "poll", "pollcreationmessage" -> "Poll"
     else -> "[$type]"
 }
 
-/** Coarse mapping used by UI only; not a fake delivery guarantee. */
 private fun ticksFor(status: Int?): String = when {
     status == null -> "✓"
-    status >= 3 -> "✓✓"
     status >= 2 -> "✓✓"
     else -> "✓"
 }
