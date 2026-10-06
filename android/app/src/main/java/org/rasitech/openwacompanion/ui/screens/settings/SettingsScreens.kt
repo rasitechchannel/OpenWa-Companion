@@ -27,9 +27,9 @@ fun SettingsScreen(
 ) {
     val wa = org.rasitech.openwacompanion.ui.theme.WaTheme.colors
     val rows = buildList {
-        add(SettingsRow("Account", "Security notifications, log out", Routes.AccountSwitcher.route))
+        add(SettingsRow("Account", "Accounts, linked session, security", Routes.AccountSettings.route))
         add(SettingsRow("Privacy", "Blocked accounts, disappearing messages", Routes.Privacy.route))
-        add(SettingsRow("Chats", "Theme, wallpapers, chat history", Routes.Storage.route))
+        add(SettingsRow("Chats", "Theme, archived chats, chat preferences", Routes.ChatsSettings.route))
         add(SettingsRow("Notifications", "Message, group & call tones", Routes.Notifications.route))
         add(SettingsRow("Storage and data", "Network usage, auto-download", Routes.Storage.route))
         add(SettingsRow("App lock", "Biometric / device credential", Routes.AppLock.route))
