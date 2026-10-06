@@ -43,3 +43,29 @@ Applied WhatsApp-aligned structure (not Material sample):
 ## Status
 
 **UI/UX: PARTIAL** — major structural parity pass landed; not DONE until unlock + visual compare loop closes remaining density/icon/sheet gaps.
+
+
+## Parity pass — 2026-10-06
+
+Implemented in `chatgpt/whatsapp-parity-pass`:
+- current light-theme app bar hierarchy
+- real Select contact / New chat flow
+- Archived entry + Archived chats screen
+- Contact/Group info from synced Room data
+- QR-first companion pairing with phone-number pairing as an explicit alternative
+- long-press message selection
+- reply, quick reaction and delete-own-message actions backed by Baileys commands
+- WhatsApp-like attachment sheet with real image/video/audio/document sending
+- Account / Chats / Notifications settings hierarchy
+- Android notification settings integration
+- production Privacy and Storage screens without raw JSON/internal paths
+
+Still not parity-complete:
+- swipe-to-reply gesture
+- media viewer/gallery grid
+- voice-note recording/playback waveform
+- status viewer/composer
+- community-specific hierarchy beyond synced group data
+- message info screen with receipt details
+- per-chat mute/archive/pin action sheet
+- final side-by-side screenshot calibration on a physical device
