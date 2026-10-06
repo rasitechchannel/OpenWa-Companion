@@ -31,12 +31,14 @@ jobs:
           cache-dependency-path: engine/package-lock.json
 
       - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: ''
 
       - name: Install Android packages
         shell: pwsh
         run: |
-          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+          sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
 
       - name: Download and verify embedded Node runtime
         shell: pwsh
