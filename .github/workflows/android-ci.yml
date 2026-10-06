@@ -1,0 +1,80 @@
+name: Android CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: engine/package-lock.json
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android packages
+        shell: pwsh
+        run: |
+          sdkmanager "platforms;android-36" "build-tools;36.0.0" "ndk;27.2.12479018" "cmake;3.22.1"
+
+      - name: Download and verify embedded Node runtime
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          New-Item -ItemType Directory -Force -Path third_party | Out-Null
+          gh release download v26.10.0-0 --repo fogtape/nodejs-mobile --pattern "nodejs-mobile-android-lite-26.10.0-0.zip" --dir third_party
+          $zip = "third_party\nodejs-mobile-android-lite-26.10.0-0.zip"
+          $expected = "f09e6a565feb5619dc1e8f424fa354b635a1df22da3414c57f6df11c46b01453"
+          $actual = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($actual -ne $expected) {
+            throw "Embedded Node checksum mismatch: $actual"
+          }
+          Expand-Archive $zip -DestinationPath "third_party\nodejs-mobile-android-lite-26.10.0-0" -Force
+          .\scripts\setup-native.ps1
+
+      - name: Install and package Baileys engine
+        shell: pwsh
+        run: |
+          Push-Location engine
+          npm ci
+          Pop-Location
+          .\scripts\package-engine.ps1
+
+      - name: Run unit tests
+        shell: pwsh
+        working-directory: android
+        run: .\gradlew.bat :app:testDebugUnitTest --stacktrace
+
+      - name: Build debug APK
+        shell: pwsh
+        working-directory: android
+        run: .\gradlew.bat :app:assembleDebug --stacktrace
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: openwa-debug-apk
+          path: android/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
