@@ -6,10 +6,16 @@ sealed class Routes(val route: String) {
     data object Home : Routes("home")
     data object Search : Routes("search")
     data object NewChat : Routes("new-chat")
+    data object Archived : Routes("archived")
     data object Conversation : Routes("chat/{chatId}") {
         fun create(chatId: String) = "chat/$chatId"
     }
+    data object ChatInfo : Routes("chat-info/{chatId}") {
+        fun create(chatId: String) = "chat-info/$chatId"
+    }
     data object Settings : Routes("settings")
+    data object AccountSettings : Routes("account-settings")
+    data object ChatsSettings : Routes("chats-settings")
     data object About : Routes("about")
     data object Licenses : Routes("licenses")
     data object OpenSource : Routes("opensource")
