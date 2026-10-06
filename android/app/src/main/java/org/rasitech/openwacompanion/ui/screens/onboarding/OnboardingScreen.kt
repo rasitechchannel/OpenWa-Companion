@@ -64,6 +64,7 @@ fun OnboardingScreen(onConnected: () -> Unit, onSkipToHome: () -> Unit) {
     var phone by remember { mutableStateOf("") }
     var step by remember { mutableStateOf(0) } // 0 welcome, 1 link
     var started by remember { mutableStateOf(false) }
+    var showPhonePairing by remember { mutableStateOf(false) }
     val wa = WaTheme.colors
 
     LaunchedEffect(Unit) {
@@ -171,39 +172,66 @@ fun OnboardingScreen(onConnected: () -> Unit, onSkipToHome: () -> Unit) {
                 }
             }
 
-            status?.pairingCode?.let { code ->
-                Spacer(modifier = Modifier.height(20.dp))
-                Text("Link with phone number instead", style = MaterialTheme.typography.titleSmall)
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(18.dp))
+            if (!showPhonePairing) {
+                TextButton(onClick = { showPhonePairing = true }) {
+                    Text("Link with phone number instead", color = WaColor.Accent)
+                }
+            } else {
                 Text(
-                    code.chunked(4).joinToString("  "),
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = WaColor.Accent,
-                    letterSpacing = 2.sp,
+                    "Link with phone number",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.fillMaxWidth(),
                 )
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-            OutlinedTextField(
-                value = phone,
-                onValueChange = { phone = it },
-                label = { Text("Phone number with country code") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = WaColor.Accent,
-                    cursorColor = WaColor.Accent,
-                ),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = { repo.requestPairingCode(phone) },
-                enabled = phone.filter { it.isDigit() }.length >= 8,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = WaColor.Accent, contentColor = Color.Black),
-            ) {
-                Text("Get linking code")
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    "Enter the number of your primary WhatsApp account, including country code.",
+                    color = wa.secondaryText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = phone,
+                    onValueChange = { phone = it },
+                    label = { Text("Phone number") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = WaColor.Accent,
+                        cursorColor = WaColor.Accent,
+                    ),
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { repo.requestPairingCode(phone) },
+                    enabled = phone.filter { it.isDigit() }.length >= 8,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = WaColor.Accent, contentColor = Color.Black),
+                    shape = RoundedCornerShape(24.dp),
+                ) {
+                    Text("Next", fontWeight = FontWeight.SemiBold)
+                }
+                status?.pairingCode?.let { code ->
+                    Spacer(modifier = Modifier.height(18.dp))
+                    Text(
+                        "Enter this code on your primary phone",
+                        color = wa.secondaryText,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        code.chunked(4).joinToString("  "),
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = WaColor.Accent,
+                        letterSpacing = 2.sp,
+                    )
+                }
+                TextButton(onClick = { showPhonePairing = false }) {
+                    Text("Use QR code instead", color = WaColor.Accent)
+                }
             }
 
             if (BuildConfig.DEBUG) {
