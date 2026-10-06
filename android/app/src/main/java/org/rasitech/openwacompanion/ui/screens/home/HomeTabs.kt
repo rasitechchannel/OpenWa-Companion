@@ -20,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddComment
 import androidx.compose.material.icons.outlined.Call
-import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.DonutLarge
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MoreVert
@@ -61,6 +60,7 @@ fun ChatsTab(
     onOpenSettings: () -> Unit,
     onOpenSearch: () -> Unit,
     onOpenAccounts: () -> Unit,
+    onNewChat: () -> Unit,
 ) {
     val context = LocalContext.current
     val repo = remember { OpenWaRepository(context) }
@@ -92,15 +92,11 @@ fun ChatsTab(
                         .weight(1f)
                         .padding(start = 8.dp),
                 )
-                IconButton(onClick = { /* camera attach reserved; no fake capture */ }) {
-                    Icon(Icons.Outlined.CameraAlt, contentDescription = "Camera", tint = iconTint(wa.isDark))
-                }
                 Box {
                     IconButton(onClick = { menuOpen = true }) {
                         Icon(Icons.Outlined.MoreVert, contentDescription = "More options", tint = iconTint(wa.isDark))
                     }
                     DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                        DropdownMenuItem(text = { Text("New group") }, onClick = { menuOpen = false })
                         DropdownMenuItem(
                             text = { Text("Linked devices") },
                             onClick = { menuOpen = false; onOpenAccounts() },
@@ -191,7 +187,7 @@ fun ChatsTab(
         }
 
         FloatingActionButton(
-            onClick = onOpenSearch,
+            onClick = onNewChat,
             containerColor = wa.fab,
             contentColor = Color.Black,
             shape = RoundedCornerShape(16.dp),
