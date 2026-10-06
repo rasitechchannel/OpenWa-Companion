@@ -69,3 +69,7 @@ Still not parity-complete:
 - community-specific hierarchy beyond synced group data
 - per-chat mute/archive/pin action sheet
 - final side-by-side screenshot calibration on a physical device
+
+
+## CI validation
+PR #2 uses the repository Android CI to rebuild the embedded engine, run unit tests, and assemble the debug APK. Physical-device parity and E2E validation remain separate release gates.
