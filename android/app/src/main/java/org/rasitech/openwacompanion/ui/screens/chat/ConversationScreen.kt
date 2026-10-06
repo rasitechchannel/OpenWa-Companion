@@ -1,7 +1,12 @@
 package org.rasitech.openwacompanion.ui.screens.chat
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,6 +57,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,8 +71,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.io.File
+import kotlinx.coroutines.delay
 import org.rasitech.openwacompanion.data.repo.OpenWaRepository
 import org.rasitech.openwacompanion.domain.model.MessageItem
 import org.rasitech.openwacompanion.ui.components.MessageBubble
@@ -90,13 +98,51 @@ fun ConversationScreen(
     val chat = chats.firstOrNull { it.chatId == chatId }
     val title = chat?.title
         ?: org.rasitech.openwacompanion.ui.util.ChatPresentation.displayTitle(null, chatId)
+
     var draft by remember { mutableStateOf("") }
     var selectedMessage by remember { mutableStateOf<MessageItem?>(null) }
     var replyTo by remember { mutableStateOf<MessageItem?>(null) }
     var showReactionPicker by remember { mutableStateOf(false) }
     var showAttachmentSheet by remember { mutableStateOf(false) }
+
+    var recorder by remember { mutableStateOf<MediaRecorder?>(null) }
+    var recordingFile by remember { mutableStateOf<File?>(null) }
+    var isRecording by remember { mutableStateOf(false) }
+    var recordingStartedAt by remember { mutableStateOf(0L) }
+    var recordingSeconds by remember { mutableStateOf(0L) }
+    var amplitudes by remember { mutableStateOf(List(22) { 0.08f }) }
+
     val listState = rememberLazyListState()
     val wa = WaTheme.colors
+
+    val beginRecording: () -> Unit = {
+        val session = startVoiceRecorder(context)
+        if (session == null) {
+            Toast.makeText(context, "Could not start microphone recording.", Toast.LENGTH_SHORT).show()
+        } else {
+            recorder = session.recorder
+            recordingFile = session.file
+            recordingStartedAt = SystemClock.elapsedRealtime()
+            recordingSeconds = 0L
+            amplitudes = List(22) { 0.08f }
+            replyTo = null
+            isRecording = true
+        }
+    }
+
+    val microphonePermission = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { granted ->
+        if (granted) {
+            beginRecording()
+        } else {
+            Toast.makeText(
+                context,
+                "Microphone permission is required to record a voice message.",
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
 
     val mediaPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -120,6 +166,33 @@ fun ConversationScreen(
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.lastIndex)
+        }
+    }
+
+    LaunchedEffect(isRecording, recordingStartedAt) {
+        if (!isRecording) return@LaunchedEffect
+        while (true) {
+            delay(120)
+            val amplitude = recorder?.let {
+                runCatching { it.maxAmplitude }.getOrDefault(0)
+            } ?: 0
+            val normalized = if (amplitude <= 0) {
+                0.08f
+            } else {
+                (amplitude / 32767f).coerceIn(0.08f, 1f)
+            }
+            amplitudes = amplitudes.drop(1) + normalized
+            recordingSeconds = ((SystemClock.elapsedRealtime() - recordingStartedAt) / 1000L)
+                .coerceAtLeast(0L)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            recorder?.let { active ->
+                finishVoiceRecorder(active)
+            }
+            recordingFile?.delete()
         }
     }
 
@@ -198,8 +271,6 @@ fun ConversationScreen(
                     }) {
                         Icon(Icons.Outlined.Info, contentDescription = "Message info", tint = barIcon(wa.isDark))
                     }
-                }
-                if (selectedMessage?.fromMe == true) {
                     IconButton(onClick = {
                         selectedMessage?.let(repo::deleteMessage)
                         selectedMessage = null
@@ -262,7 +333,8 @@ fun ConversationScreen(
                             Text(
                                 "Group info",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (wa.isDark) wa.secondaryText else MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = if (wa.isDark) wa.secondaryText
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                     }
@@ -343,43 +415,89 @@ fun ConversationScreen(
                 .padding(horizontal = 6.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(WaDimens.ComposerHeight)
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(wa.incomingBubble),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Outlined.EmojiEmotions,
-                    contentDescription = null,
-                    tint = wa.secondaryText,
-                    modifier = Modifier.padding(start = 12.dp).size(24.dp),
-                )
-                TextField(
-                    value = draft,
-                    onValueChange = { draft = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Message", color = wa.secondaryText) },
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                    ),
-                )
-                IconButton(onClick = { showAttachmentSheet = true }) {
+            if (isRecording) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(WaDimens.ComposerHeight)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(wa.incomingBubble)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    IconButton(
+                        onClick = {
+                            val active = recorder
+                            recorder = null
+                            isRecording = false
+                            active?.let(::finishVoiceRecorder)
+                            recordingFile?.delete()
+                            recordingFile = null
+                            amplitudes = List(22) { 0.08f }
+                        },
+                    ) {
+                        Icon(
+                            Icons.Outlined.DeleteOutline,
+                            contentDescription = "Cancel voice message",
+                            tint = MaterialTheme.colorScheme.error,
+                        )
+                    }
                     Icon(
-                        Icons.Outlined.AttachFile,
-                        contentDescription = "Attach",
-                        tint = wa.secondaryText,
-                        modifier = Modifier.size(22.dp),
+                        Icons.Outlined.Mic,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Text(
+                        formatVoiceDuration(recordingSeconds),
+                        modifier = Modifier.padding(start = 6.dp, end = 8.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                    VoiceWaveform(
+                        amplitudes = amplitudes,
+                        modifier = Modifier.weight(1f),
                     )
                 }
+            } else {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(WaDimens.ComposerHeight)
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(wa.incomingBubble),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        Icons.Outlined.EmojiEmotions,
+                        contentDescription = null,
+                        tint = wa.secondaryText,
+                        modifier = Modifier.padding(start = 12.dp).size(24.dp),
+                    )
+                    TextField(
+                        value = draft,
+                        onValueChange = { draft = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Message", color = wa.secondaryText) },
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                        ),
+                    )
+                    IconButton(onClick = { showAttachmentSheet = true }) {
+                        Icon(
+                            Icons.Outlined.AttachFile,
+                            contentDescription = "Attach",
+                            tint = wa.secondaryText,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
             }
+
             Spacer(modifier = Modifier.width(6.dp))
             Box(
                 modifier = Modifier
@@ -390,26 +508,85 @@ fun ConversationScreen(
             ) {
                 IconButton(
                     onClick = {
-                        if (draft.isNotBlank()) {
-                            repo.sendText(chatId, draft.trim(), quoted = replyTo)
-                            draft = ""
-                            replyTo = null
-                        } else {
-                            Toast.makeText(
+                        when {
+                            isRecording -> {
+                                val active = recorder
+                                val file = recordingFile
+                                recorder = null
+                                recordingFile = null
+                                isRecording = false
+                                val stopped = active?.let(::finishVoiceRecorder) == true
+                                if (stopped && file != null && file.exists() && file.length() > 0L) {
+                                    repo.sendMedia(
+                                        jid = chatId,
+                                        filePath = file.absolutePath,
+                                        mimeType = "audio/mp4",
+                                        ptt = true,
+                                    )
+                                } else {
+                                    file?.delete()
+                                    Toast.makeText(
+                                        context,
+                                        "Voice message was too short or could not be recorded.",
+                                        Toast.LENGTH_SHORT,
+                                    ).show()
+                                }
+                                amplitudes = List(22) { 0.08f }
+                            }
+                            draft.isNotBlank() -> {
+                                repo.sendText(chatId, draft.trim(), quoted = replyTo)
+                                draft = ""
+                                replyTo = null
+                            }
+                            ContextCompat.checkSelfPermission(
                                 context,
-                                "Voice note recording is not available in this build yet.",
-                                Toast.LENGTH_SHORT,
-                            ).show()
+                                Manifest.permission.RECORD_AUDIO,
+                            ) == PackageManager.PERMISSION_GRANTED -> {
+                                beginRecording()
+                            }
+                            else -> {
+                                microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
+                            }
                         }
                     },
                 ) {
                     Icon(
-                        imageVector = if (draft.isBlank()) Icons.Outlined.Mic else Icons.AutoMirrored.Outlined.Send,
-                        contentDescription = if (draft.isBlank()) "Voice note unavailable" else "Send",
+                        imageVector = when {
+                            isRecording -> Icons.AutoMirrored.Outlined.Send
+                            draft.isBlank() -> Icons.Outlined.Mic
+                            else -> Icons.AutoMirrored.Outlined.Send
+                        },
+                        contentDescription = when {
+                            isRecording -> "Send voice message"
+                            draft.isBlank() -> "Record voice message"
+                            else -> "Send"
+                        },
                         tint = Color.Black,
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun VoiceWaveform(
+    amplitudes: List<Float>,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.padding(horizontal = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        amplitudes.takeLast(18).forEach { level ->
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height((4f + (level.coerceIn(0f, 1f) * 22f)).dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.primary),
+            )
         }
     }
 }
@@ -425,6 +602,46 @@ private fun AttachmentOption(
         leadingContent = { Icon(icon, contentDescription = null) },
         modifier = Modifier.clickable(onClick = onClick),
     )
+}
+
+private data class VoiceRecorderSession(
+    val recorder: MediaRecorder,
+    val file: File,
+)
+
+@Suppress("DEPRECATION")
+private fun startVoiceRecorder(context: Context): VoiceRecorderSession? {
+    return runCatching {
+        val dir = File(context.cacheDir, "outgoing")
+        if (!dir.exists()) dir.mkdirs()
+        val file = File(dir, "voice-" + System.currentTimeMillis() + ".m4a")
+        val active = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            MediaRecorder(context)
+        } else {
+            MediaRecorder()
+        }
+        active.setAudioSource(MediaRecorder.AudioSource.MIC)
+        active.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+        active.setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+        active.setAudioEncodingBitRate(96_000)
+        active.setAudioSamplingRate(44_100)
+        active.setOutputFile(file.absolutePath)
+        active.prepare()
+        active.start()
+        VoiceRecorderSession(active, file)
+    }.getOrNull()
+}
+
+private fun finishVoiceRecorder(recorder: MediaRecorder): Boolean {
+    val stopped = runCatching { recorder.stop() }.isSuccess
+    runCatching { recorder.release() }
+    return stopped
+}
+
+private fun formatVoiceDuration(seconds: Long): String {
+    val minutes = seconds / 60L
+    val remainder = seconds % 60L
+    return String.format(java.util.Locale.US, "%d:%02d", minutes, remainder)
 }
 
 private fun copyToPrivateAttachment(context: Context, uri: Uri): Pair<String, String>? {
