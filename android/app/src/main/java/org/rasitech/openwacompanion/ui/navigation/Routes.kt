@@ -16,6 +16,9 @@ sealed class Routes(val route: String) {
     data object MessageInfo : Routes("message-info/{chatId}/{messageId}") {
         fun create(chatId: String, messageId: String) = "message-info/$chatId/$messageId"
     }
+    data object MediaViewer : Routes("media/{chatId}/{messageId}") {
+        fun create(chatId: String, messageId: String) = "media/$chatId/$messageId"
+    }
     data object Settings : Routes("settings")
     data object AccountSettings : Routes("account-settings")
     data object ChatsSettings : Routes("chats-settings")
