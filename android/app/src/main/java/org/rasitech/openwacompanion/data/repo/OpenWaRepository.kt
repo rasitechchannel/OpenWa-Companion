@@ -124,6 +124,19 @@ class OpenWaRepository(context: Context) {
         )
     }
 
+    fun sendMedia(jid: String, filePath: String, mimeType: String, caption: String? = null) {
+        NodeBridge.writeCommand(
+            app,
+            JSONObject()
+                .put("type", "send-media")
+                .put("jid", jid)
+                .put("path", filePath)
+                .put("mimeType", mimeType)
+                .put("caption", caption ?: "")
+                .toString(),
+        )
+    }
+
     fun requestPairingCode(phone: String) {
         NodeBridge.writeCommand(
             app,
