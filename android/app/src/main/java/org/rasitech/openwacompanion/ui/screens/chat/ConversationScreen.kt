@@ -38,6 +38,7 @@ import androidx.compose.material.icons.outlined.DeleteOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.Image
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.VideoFile
 import androidx.compose.material3.Icon
@@ -77,6 +78,7 @@ fun ConversationScreen(
     chatId: String,
     onBack: () -> Unit,
     onOpenInfo: () -> Unit = {},
+    onOpenMessageInfo: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val repo = remember { OpenWaRepository(context) }
@@ -184,6 +186,15 @@ fun ConversationScreen(
                 }
                 IconButton(onClick = { showReactionPicker = !showReactionPicker }) {
                     Icon(Icons.Outlined.EmojiEmotions, contentDescription = "React", tint = barIcon(wa.isDark))
+                }
+                if (selectedMessage?.fromMe == true) {
+                    IconButton(onClick = {
+                        selectedMessage?.messageId?.let(onOpenMessageInfo)
+                        selectedMessage = null
+                        showReactionPicker = false
+                    }) {
+                        Icon(Icons.Outlined.Info, contentDescription = "Message info", tint = barIcon(wa.isDark))
+                    }
                 }
                 if (selectedMessage?.fromMe == true) {
                     IconButton(onClick = {
