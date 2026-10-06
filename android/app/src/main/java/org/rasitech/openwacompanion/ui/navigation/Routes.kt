@@ -35,7 +35,4 @@ sealed class Routes(val route: String) {
     data object GroupInfo : Routes("group/{groupId}") {
         fun create(groupId: String) = "group/$groupId"
     }
-    data object MediaViewer : Routes("media/{path}") {
-        fun create(path: String) = "media/$path"
-    }
 }
