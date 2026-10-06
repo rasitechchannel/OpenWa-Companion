@@ -33,9 +33,10 @@ fun WaAvatar(
     name: String,
     size: Dp = WaDimens.AvatarList,
     modifier: Modifier = Modifier,
+    brandColor: Color? = null,
 ) {
     val letter = name.trim().firstOrNull { it.isLetterOrDigit() }?.uppercaseChar()?.toString() ?: "?"
-    val color = AvatarPalette[abs(name.hashCode()) % AvatarPalette.size]
+    val color = brandColor ?: AvatarPalette[abs(name.hashCode()) % AvatarPalette.size]
     Box(
         modifier = modifier
             .size(size)

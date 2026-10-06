@@ -26,7 +26,10 @@ class MainActivity : FragmentActivity() {
         setContent {
             var unlocked by remember { mutableStateOf(!lockEnabled) }
             OpenWaTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = androidx.compose.material3.MaterialTheme.colorScheme.background,
+                ) {
                     if (unlocked) {
                         OpenWaNavHost()
                     } else {

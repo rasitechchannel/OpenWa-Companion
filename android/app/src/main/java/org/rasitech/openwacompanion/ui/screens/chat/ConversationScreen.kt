@@ -25,12 +25,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.outlined.AttachFile
-import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.EmojiEmotions
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.Videocam
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -64,7 +62,7 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
     val messages by repo.observeMessages("default", chatId).collectAsStateWithLifecycle(emptyList())
     val chats by repo.observeChats("default").collectAsStateWithLifecycle(emptyList())
     val title = chats.firstOrNull { it.chatId == chatId }?.title
-        ?: chatId.substringBefore("@").ifBlank { chatId }
+        ?: org.rasitech.openwacompanion.ui.util.ChatPresentation.displayTitle(null, chatId)
     var draft by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val wa = WaTheme.colors
@@ -103,12 +101,6 @@ fun ConversationScreen(chatId: String, onBack: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }
-            IconButton(onClick = { /* no live video — truthful no-op */ }) {
-                Icon(Icons.Outlined.Videocam, contentDescription = "Video call unavailable", tint = barIcon(wa.isDark).copy(alpha = 0.45f))
-            }
-            IconButton(onClick = { /* no live voice — truthful no-op */ }) {
-                Icon(Icons.Outlined.Call, contentDescription = "Voice call unavailable", tint = barIcon(wa.isDark).copy(alpha = 0.45f))
             }
             IconButton(onClick = { }) {
                 Icon(Icons.Outlined.MoreVert, contentDescription = "More", tint = barIcon(wa.isDark))

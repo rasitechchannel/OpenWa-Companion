@@ -69,6 +69,7 @@ fun SettingsScreen(
                         org.rasitech.openwacompanion.ui.components.WaAvatar(
                             name = "OpenWA",
                             size = org.rasitech.openwacompanion.ui.theme.WaDimens.AvatarSettings,
+                            brandColor = org.rasitech.openwacompanion.ui.theme.WaColor.Accent,
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text("OpenWA Companion", style = MaterialTheme.typography.titleLarge)

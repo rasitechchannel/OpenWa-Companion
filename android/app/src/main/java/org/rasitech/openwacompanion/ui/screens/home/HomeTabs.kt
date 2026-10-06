@@ -16,11 +16,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AddComment
+import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.DonutLarge
+import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material3.DropdownMenu
@@ -46,8 +48,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.rasitech.openwacompanion.data.repo.OpenWaRepository
 import org.rasitech.openwacompanion.ui.components.ChatListRow
 import org.rasitech.openwacompanion.ui.components.WaAvatar
+import org.rasitech.openwacompanion.ui.components.WaEmptyState
 import org.rasitech.openwacompanion.ui.theme.WaDimens
 import org.rasitech.openwacompanion.ui.theme.WaTheme
+import org.rasitech.openwacompanion.ui.util.ChatPresentation
 
 private const val ACCOUNT = "default"
 
@@ -130,30 +134,48 @@ fun ChatsTab(
             }
 
             if (!linked) {
-                Text(
-                    text = "Not linked — open Settings → Linked devices to pair. No dummy chats.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = wa.secondaryText,
-                    modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad, vertical = 8.dp),
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = WaDimens.ScreenHPad, vertical = 4.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable(onClick = onOpenAccounts)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "WhatsApp not linked",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        Text(
+                            text = "Tap to pair with QR or pairing code",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = wa.secondaryText,
+                        )
+                    }
+                    Text(
+                        text = "Link",
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
             }
 
             if (active.isEmpty()) {
-                Box(modifier = Modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text("Chats", style = MaterialTheme.typography.titleLarge)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = if (linked) {
-                                "Waiting for history sync from your linked account."
-                            } else {
-                                "Link your WhatsApp account to see real conversations."
-                            },
-                            color = wa.secondaryText,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+                WaEmptyState(
+                    title = if (linked) "Waiting for chats" else "No chats yet",
+                    body = if (linked) {
+                        "History will appear here as your linked account syncs."
+                    } else {
+                        "Link your WhatsApp account to see real conversations."
+                    },
+                    icon = Icons.Outlined.AddComment,
+                    modifier = Modifier.weight(1f),
+                )
             } else {
                 LazyColumn(contentPadding = PaddingValues(bottom = 88.dp)) {
                     if (pinned.isNotEmpty()) {
@@ -188,30 +210,39 @@ fun UpdatesTab() {
     val repo = remember { OpenWaRepository(context) }
     val channels by repo.observeNewsletters(ACCOUNT).collectAsStateWithLifecycle(emptyList())
     val wa = WaTheme.colors
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(WaDimens.ScreenHPad)) {
-        Text("Updates", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Status", style = MaterialTheme.typography.titleMedium)
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Text(
-            "Status updates appear here when synced. Nothing is fabricated.",
-            color = wa.secondaryText,
-            style = MaterialTheme.typography.bodyMedium,
+            "Updates",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad, vertical = 12.dp),
         )
-        Spacer(modifier = Modifier.height(20.dp))
-        Text("Channels", style = MaterialTheme.typography.titleMedium)
-        Spacer(modifier = Modifier.height(8.dp))
         if (channels.isEmpty()) {
-            Text("No channels yet.", color = wa.secondaryText)
+            WaEmptyState(
+                title = "No updates yet",
+                body = "Status and channels from your linked account will show up here.",
+                icon = Icons.Outlined.DonutLarge,
+            )
         } else {
-            channels.forEach {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    WaAvatar(name = it.name ?: it.newsletterId)
-                    Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text(it.name ?: it.newsletterId, style = MaterialTheme.typography.titleMedium)
-                        Text(it.description ?: "", color = wa.secondaryText, style = MaterialTheme.typography.bodyMedium, maxLines = 1)
+            Column(modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad)) {
+                Text("Channels", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                channels.forEach {
+                    val name = ChatPresentation.cleanLabel(it.name) ?: it.newsletterId
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        WaAvatar(name = name)
+                        Column(modifier = Modifier.padding(start = 12.dp)) {
+                            Text(name, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                ChatPresentation.cleanLabel(it.description).orEmpty(),
+                                color = wa.secondaryText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -225,27 +256,36 @@ fun CommunitiesTab() {
     val repo = remember { OpenWaRepository(context) }
     val groups by repo.observeGroups(ACCOUNT).collectAsStateWithLifecycle(emptyList())
     val wa = WaTheme.colors
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(WaDimens.ScreenHPad)) {
-        Text("Communities", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Text(
-            "Groups and community metadata from your linked session.",
-            color = wa.secondaryText,
-            style = MaterialTheme.typography.bodyMedium,
+            "Communities",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad, vertical = 12.dp),
         )
-        Spacer(modifier = Modifier.height(16.dp))
         if (groups.isEmpty()) {
-            Text("No communities or groups synced yet.", color = wa.secondaryText)
+            WaEmptyState(
+                title = "No communities yet",
+                body = "Groups from your linked session will appear here after sync.",
+                icon = Icons.Outlined.Groups,
+            )
         } else {
-            groups.forEach {
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    WaAvatar(name = it.subject ?: it.groupId)
-                    Column(modifier = Modifier.padding(start = 12.dp)) {
-                        Text(it.subject ?: it.groupId, style = MaterialTheme.typography.titleMedium)
-                        Text(it.description ?: "", color = wa.secondaryText, maxLines = 1)
+            Column(modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad)) {
+                groups.forEach {
+                    val name = ChatPresentation.cleanLabel(it.subject) ?: it.groupId
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        WaAvatar(name = name)
+                        Column(modifier = Modifier.padding(start = 12.dp)) {
+                            Text(name, style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                ChatPresentation.cleanLabel(it.description).orEmpty(),
+                                color = wa.secondaryText,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
             }
@@ -259,35 +299,45 @@ fun CallsTab() {
     val repo = remember { OpenWaRepository(context) }
     val calls by repo.observeCalls(ACCOUNT).collectAsStateWithLifecycle(emptyList())
     val wa = WaTheme.colors
-    Column(modifier = Modifier.fillMaxSize().statusBarsPadding().padding(WaDimens.ScreenHPad)) {
-        Text("Calls", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-        Spacer(modifier = Modifier.height(8.dp))
+    Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
         Text(
-            "Call events only. Live voice/video media is not supported.",
-            color = wa.secondaryText,
-            style = MaterialTheme.typography.bodyMedium,
+            "Calls",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad, vertical = 12.dp),
         )
-        Spacer(modifier = Modifier.height(16.dp))
         if (calls.isEmpty()) {
-            Text("No call events yet.", color = wa.secondaryText)
+            WaEmptyState(
+                title = "No calls yet",
+                body = "Incoming call events will be listed here. Live voice and video are not supported.",
+                icon = Icons.Outlined.Call,
+            )
         } else {
-            calls.forEach { call ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                        WaAvatar(name = call.fromJid ?: call.callId)
-                        Column(modifier = Modifier.padding(start = 12.dp)) {
-                            Text(
-                                (if (call.isVideo) "Video" else "Voice") + " · " + call.status,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(call.fromJid ?: call.chatId ?: call.callId, color = wa.secondaryText, maxLines = 1)
+            Column(modifier = Modifier.padding(horizontal = WaDimens.ScreenHPad)) {
+                Text(
+                    "Call history only — live media is not available.",
+                    color = wa.secondaryText,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                calls.forEach { call ->
+                    val name = ChatPresentation.displayTitle(null, call.fromJid ?: call.callId)
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                            WaAvatar(name = name)
+                            Column(modifier = Modifier.padding(start = 12.dp)) {
+                                Text(
+                                    (if (call.isVideo) "Video" else "Voice") + " · " + call.status,
+                                    style = MaterialTheme.typography.titleMedium,
+                                )
+                                Text(name, color = wa.secondaryText, maxLines = 1)
+                            }
                         }
                     }
-                    Text("No live media", color = wa.secondaryText, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }

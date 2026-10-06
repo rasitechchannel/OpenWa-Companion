@@ -199,13 +199,15 @@ class BridgeEventIngester(
                         rowId = "$accountId:$id",
                         accountId = accountId,
                         chatId = id,
-                        title = c.optString("name").ifEmpty {
-                            c.optString("title").ifEmpty { id }
-                        },
-                        lastMessagePreview = c.optString("lastMessagePreview").ifEmpty { null },
-                        lastTimestamp = c.optLong(
-                            "conversationTimestamp",
-                            c.optLong("lastTimestamp", 0L),
+                        title = c.cleanString("name")
+                            ?: c.cleanString("title")
+                            ?: id,
+                        lastMessagePreview = c.cleanString("lastMessagePreview"),
+                        lastTimestamp = normalizeEpochMs(
+                            c.optLong(
+                                "conversationTimestamp",
+                                c.optLong("lastTimestamp", 0L),
+                            ),
                         ),
                         unreadCount = c.optInt("unreadCount"),
                         pinned = c.optLong("pinned"),
@@ -233,10 +235,10 @@ class BridgeEventIngester(
                         rowId = "$accountId:$id",
                         accountId = accountId,
                         contactId = id,
-                        name = c.optString("name").ifEmpty { null },
-                        notify = c.optString("notify").ifEmpty { null },
-                        verifiedName = c.optString("verifiedName").ifEmpty { null },
-                        lid = c.optString("lid").ifEmpty { null },
+                        name = c.cleanString("name"),
+                        notify = c.cleanString("notify"),
+                        verifiedName = c.cleanString("verifiedName"),
+                        lid = c.cleanString("lid"),
                         updatedAt = now,
                     ),
                 )
@@ -279,8 +281,8 @@ class BridgeEventIngester(
                         fromMe = key.optBoolean("fromMe"),
                         senderJid = key.optString("participant").ifEmpty { null },
                         contentType = m.optString("contentType", "unknown"),
-                        text = m.optString("text").ifEmpty { null },
-                        timestamp = m.optLong("timestamp"),
+                        text = m.cleanString("text"),
+                        timestamp = normalizeEpochMs(m.optLong("timestamp")),
                         status = if (m.has("status") && !m.isNull("status")) m.optInt("status") else null,
                         mediaPath = mediaPath,
                         quotedId = m.optString("quotedId").ifEmpty { null },
@@ -390,9 +392,9 @@ class BridgeEventIngester(
                         rowId = "$accountId:$id",
                         accountId = accountId,
                         groupId = id,
-                        subject = g.optString("subject").ifEmpty { null },
-                        description = g.optString("desc").ifEmpty { null },
-                        owner = g.optString("owner").ifEmpty { null },
+                        subject = g.cleanString("subject"),
+                        description = g.cleanString("desc"),
+                        owner = g.cleanString("owner"),
                         creation = g.optLong("creation").takeIf { it > 0 },
                         restrict = g.optBoolean("restrict"),
                         announce = g.optBoolean("announce"),
@@ -489,6 +491,19 @@ class BridgeEventIngester(
     private fun JSONArray?.toStringList(): List<String> {
         if (this == null) return emptyList()
         return buildList { for (i in 0 until length()) add(optString(i)) }
+    }
+
+    /** Avoid JSONObject.NULL → literal "null" leaking into Room/UI. */
+    private fun JSONObject.cleanString(key: String): String? {
+        if (!has(key) || isNull(key)) return null
+        val v = optString(key).trim()
+        if (v.isEmpty() || v.equals("null", true) || v.equals("undefined", true)) return null
+        return v
+    }
+
+    private fun normalizeEpochMs(value: Long): Long {
+        if (value <= 0L) return 0L
+        return if (value < 1_000_000_000_000L) value * 1000L else value
     }
 
     companion object {

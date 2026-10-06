@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -14,7 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Chat
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.Groups
-import androidx.compose.material.icons.outlined.TipsAndUpdates
+import androidx.compose.material.icons.outlined.DonutLarge
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -79,12 +80,14 @@ fun OpenWaNavHost(
             OnboardingScreen(
                 onConnected = {
                     nav.navigate(Routes.Home.route) {
-                        popUpTo(Routes.Onboarding.route) { inclusive = true }
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
                 onSkipToHome = {
                     nav.navigate(Routes.Home.route) {
-                        popUpTo(Routes.Onboarding.route) { inclusive = true }
+                        popUpTo(Routes.Splash.route) { inclusive = true }
+                        launchSingleTop = true
                     }
                 },
             )
@@ -137,7 +140,7 @@ private fun HomeScaffold(
     var tab by rememberSaveable { mutableIntStateOf(0) }
     val tabs = listOf(
         TabSpec("Chats", Icons.AutoMirrored.Outlined.Chat),
-        TabSpec("Updates", Icons.Outlined.TipsAndUpdates),
+        TabSpec("Updates", Icons.Outlined.DonutLarge),
         TabSpec("Communities", Icons.Outlined.Groups),
         TabSpec("Calls", Icons.Outlined.Call),
     )
@@ -195,7 +198,12 @@ private fun HomeScaffold(
             }
         },
     ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
+        Box(
+            modifier = Modifier
+                .padding(padding)
+                .fillMaxSize()
+                .background(androidx.compose.material3.MaterialTheme.colorScheme.background),
+        ) {
             when (tab) {
                 0 -> ChatsTab(
                     onOpenChat = onOpenChat,

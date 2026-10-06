@@ -11,6 +11,7 @@ import org.rasitech.openwacompanion.domain.model.CallItem
 import org.rasitech.openwacompanion.domain.model.ChatSummary
 import org.rasitech.openwacompanion.domain.model.MessageItem
 import org.rasitech.openwacompanion.engine.NodeBridge
+import org.rasitech.openwacompanion.ui.util.ChatPresentation
 
 class OpenWaRepository(context: Context) {
     private val app = context.applicationContext
@@ -25,18 +26,28 @@ class OpenWaRepository(context: Context) {
 
     fun observeChats(accountId: String): Flow<List<ChatSummary>> =
         db.chats().observeChats(accountId).map { list ->
-            list.map {
+            list.mapNotNull { row ->
+                if (!ChatPresentation.includeInChatList(
+                        chatId = row.chatId,
+                        title = row.title,
+                        preview = row.lastMessagePreview,
+                        unread = row.unreadCount,
+                        lastTimestamp = row.lastTimestamp,
+                    )
+                ) {
+                    return@mapNotNull null
+                }
                 ChatSummary(
-                    accountId = it.accountId,
-                    chatId = it.chatId,
-                    title = it.title ?: it.chatId,
-                    lastMessagePreview = it.lastMessagePreview,
-                    lastTimestamp = it.lastTimestamp,
-                    unreadCount = it.unreadCount,
-                    pinned = it.pinned > 0,
-                    archived = it.archived,
-                    mutedUntil = it.mutedUntil,
-                    isGroup = it.isGroup,
+                    accountId = row.accountId,
+                    chatId = row.chatId,
+                    title = ChatPresentation.displayTitle(row.title, row.chatId),
+                    lastMessagePreview = ChatPresentation.cleanLabel(row.lastMessagePreview),
+                    lastTimestamp = ChatPresentation.normalizeEpochMs(row.lastTimestamp),
+                    unreadCount = row.unreadCount,
+                    pinned = row.pinned > 0,
+                    archived = row.archived,
+                    mutedUntil = row.mutedUntil,
+                    isGroup = row.isGroup,
                 )
             }
         }

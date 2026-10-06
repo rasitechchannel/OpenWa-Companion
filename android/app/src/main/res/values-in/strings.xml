@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">OpenWA Companion</string>
+    <string name="app_name">OpenWA</string>
     <string name="app_subtitle">Klien companion open-source tidak resmi</string>
     <string name="unofficial_disclaimer">Tidak berafiliasi dengan WhatsApp LLC atau Meta Platforms.</string>
     <string name="action_probe_node">Periksa Node tertanam</string>

@@ -115,20 +115,21 @@ fun ChatListRow(
 }
 
 private fun formatChatTime(epochMs: Long): String {
-    if (epochMs <= 0L) return ""
+    val ms = org.rasitech.openwacompanion.ui.util.ChatPresentation.normalizeEpochMs(epochMs)
+    if (ms <= 0L) return ""
     val cal = Calendar.getInstance()
     val now = Calendar.getInstance()
-    cal.timeInMillis = epochMs
+    cal.timeInMillis = ms
     return when {
         now.get(Calendar.YEAR) == cal.get(Calendar.YEAR) &&
             now.get(Calendar.DAY_OF_YEAR) == cal.get(Calendar.DAY_OF_YEAR) ->
-            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(epochMs))
+            SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
         now.get(Calendar.YEAR) == cal.get(Calendar.YEAR) &&
             now.get(Calendar.DAY_OF_YEAR) - cal.get(Calendar.DAY_OF_YEAR) == 1 ->
             "Yesterday"
         now.get(Calendar.YEAR) == cal.get(Calendar.YEAR) ->
-            SimpleDateFormat("M/d/yy", Locale.getDefault()).format(Date(epochMs))
+            SimpleDateFormat("MMM d", Locale.getDefault()).format(Date(ms))
         else ->
-            SimpleDateFormat("M/d/yy", Locale.getDefault()).format(Date(epochMs))
+            SimpleDateFormat("M/d/yy", Locale.getDefault()).format(Date(ms))
     }
 }

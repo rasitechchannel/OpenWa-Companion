@@ -39,8 +39,9 @@ fun MessageBubble(
         RoundedCornerShape(topStart = 2.dp, topEnd = 8.dp, bottomStart = 8.dp, bottomEnd = 8.dp)
     }
     val bg = if (fromMe) wa.outgoingBubble else wa.incomingBubble
-    val time = if (message.timestamp > 0) {
-        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
+    val ts = org.rasitech.openwacompanion.ui.util.ChatPresentation.normalizeEpochMs(message.timestamp)
+    val time = if (ts > 0) {
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ts))
     } else ""
     val body = message.text?.takeIf { it.isNotBlank() }
         ?: when {
