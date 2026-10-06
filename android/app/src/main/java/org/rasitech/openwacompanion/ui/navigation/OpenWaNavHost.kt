@@ -45,6 +45,7 @@ import org.rasitech.openwacompanion.ui.screens.chat.ChatInfoScreen
 import org.rasitech.openwacompanion.ui.screens.chat.ConversationScreen
 import org.rasitech.openwacompanion.ui.screens.chat.NewChatScreen
 import org.rasitech.openwacompanion.ui.screens.chat.MessageInfoScreen
+import org.rasitech.openwacompanion.ui.screens.chat.MediaViewerScreen
 import org.rasitech.openwacompanion.ui.screens.home.CallsTab
 import org.rasitech.openwacompanion.ui.screens.home.ChatsTab
 import org.rasitech.openwacompanion.ui.screens.home.CommunitiesTab
@@ -135,6 +136,22 @@ fun OpenWaNavHost(
                 onOpenMessageInfo = { messageId ->
                     nav.navigate(Routes.MessageInfo.create(chatId, messageId))
                 },
+                onOpenMedia = { messageId ->
+                    nav.navigate(Routes.MediaViewer.create(chatId, messageId))
+                },
+            )
+        }
+        composable(
+            Routes.MediaViewer.route,
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("messageId") { type = NavType.StringType },
+            ),
+        ) { entry ->
+            MediaViewerScreen(
+                chatId = entry.arguments?.getString("chatId").orEmpty(),
+                messageId = entry.arguments?.getString("messageId").orEmpty(),
+                onBack = { nav.popBackStack() },
             )
         }
         composable(
