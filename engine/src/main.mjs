@@ -396,10 +396,25 @@ async function handleCommand(cmd) {
       if (sock) await sock.logout()
       writeStatus({ connection: 'logged-out', qr: null, qrDataUrl: null, me: null })
       break
-    case 'send-text':
+    case 'send-text': {
       if (!sock) throw new Error('socket not ready')
-      await sock.sendMessage(cmd.jid, { text: String(cmd.text || '') })
+      const content = { text: String(cmd.text || '') }
+      if (cmd.quoted && cmd.quoted.id) {
+        const quoted = {
+          key: {
+            id: cmd.quoted.id,
+            remoteJid: cmd.quoted.remoteJid || cmd.jid,
+            fromMe: !!cmd.quoted.fromMe,
+            ...(cmd.quoted.participant ? { participant: cmd.quoted.participant } : {}),
+          },
+          message: { conversation: String(cmd.quoted.text || '') },
+        }
+        await sock.sendMessage(cmd.jid, content, { quoted })
+      } else {
+        await sock.sendMessage(cmd.jid, content)
+      }
       break
+    }
     case 'send-media': {
       if (!sock) throw new Error('socket not ready')
       const filePath = String(cmd.path || '')
@@ -428,6 +443,10 @@ async function handleCommand(cmd) {
       await sock.sendMessage(cmd.jid, {
         react: { text: cmd.text || '', key: cmd.key },
       })
+      break
+    case 'delete-message':
+      if (!sock) throw new Error('socket not ready')
+      await sock.sendMessage(cmd.jid, { delete: cmd.key })
       break
     case 'read-messages':
       if (!sock) throw new Error('socket not ready')
