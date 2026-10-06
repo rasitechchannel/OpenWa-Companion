@@ -54,6 +54,8 @@ Implemented in `chatgpt/whatsapp-parity-pass`:
 - Contact/Group info from synced Room data
 - QR-first companion pairing with phone-number pairing as an explicit alternative
 - long-press message selection
+- swipe-to-reply gesture
+- Message info with Room-backed receipt/reaction summary
 - reply, quick reaction and delete-own-message actions backed by Baileys commands
 - WhatsApp-like attachment sheet with real image/video/audio/document sending
 - Account / Chats / Notifications settings hierarchy
@@ -61,11 +63,9 @@ Implemented in `chatgpt/whatsapp-parity-pass`:
 - production Privacy and Storage screens without raw JSON/internal paths
 
 Still not parity-complete:
-- swipe-to-reply gesture
 - media viewer/gallery grid
 - voice-note recording/playback waveform
 - status viewer/composer
 - community-specific hierarchy beyond synced group data
-- message info screen with receipt details
 - per-chat mute/archive/pin action sheet
 - final side-by-side screenshot calibration on a physical device
