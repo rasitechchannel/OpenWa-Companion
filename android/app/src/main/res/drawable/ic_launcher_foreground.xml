@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Dual Chat Link — simplified adaptive foreground -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,40c0,-6 5,-11 11,-11h14c6,0 11,5 11,11v10c0,6 -5,11 -11,11H48l-8,8v-8h-10c-6,0 -11,-5 -11,-11z" />
+    <path
+        android:fillColor="#E7F2EF"
+        android:pathData="M42,52c0,-6 5,-11 11,-11h14c6,0 11,5 11,11v10c0,6 -5,11 -11,11H70l-8,8v-8H53c-6,0 -11,-5 -11,-11z" />
+    <path
+        android:fillColor="#176B5B"
+        android:pathData="M50,50h8v4h-8zM54,46h4v12h-4z" />
+</vector>

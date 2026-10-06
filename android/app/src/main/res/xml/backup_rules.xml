@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- Exclude credentials, auth state, and media cache from cloud backup. -->
+    <exclude domain="root" />
+    <exclude domain="file" path="nodejs/" />
+    <exclude domain="no_backup" />
+    <exclude domain="database" />
+    <exclude domain="sharedpref" path="secure_prefs.xml" />
+</full-backup-content>

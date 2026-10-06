@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">OpenWA Companion</string>
+    <string name="app_subtitle">Klien companion open-source tidak resmi</string>
+    <string name="unofficial_disclaimer">Tidak berafiliasi dengan WhatsApp LLC atau Meta Platforms.</string>
+    <string name="action_probe_node">Periksa Node tertanam</string>
+    <string name="action_start_engine">Jalankan mesin Node</string>
+    <string name="sync_channel_name">Sinkronisasi latar</string>
+    <string name="sync_channel_description">Menjaga mesin WhatsApp lokal tetap terhubung bila diperlukan.</string>
+    <string name="sync_notification_title">OpenWA Companion</string>
+    <string name="sync_notification_text">Mesin lokal sedang berjalan</string>
+</resources>

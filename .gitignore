@@ -1,0 +1,51 @@
+# Android / Gradle
+.gradle/
+**/build/
+android/local.properties
+**/.cxx/
+**/captures/
+*.iml
+.idea/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Downloaded third_party (setup scripts fetch these)
+/third_party/**
+!/third_party/.gitkeep
+
+# Native libs copied into the app tree
+android/app/libnode/
+android/app/src/main/jniLibs/**/*.so
+
+# Node engine install / generated bundle
+**/node_modules/
+android/app/src/main/assets/nodejs/modules/
+android/app/src/main/assets/nodejs/package-lock.json
+android/app/src/main/assets/nodejs/engine-bundle.zip
+android/app/src/main/assets/nodejs/engine-bundle.zip.sha1
+
+# Secrets
+*.keystore
+local.properties
+.env
+.env.*
+creds.json
+**/auth/
+**/no_backup/
+
+# Personal device artifacts (QR, chats, PII)
+docs/device-reports/
+docs/ui-refs/whatsapp/
+docs/ui-refs/openwa/
+*.png
+!OpenWA-Companion-Agent-Pack/**/*.png
+!OpenWA-Companion-Agent-Pack/**/*.svg
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.cursor/
+agent-tools/
+*.log

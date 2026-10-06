@@ -1,0 +1,29 @@
+{
+  "colors": {
+    "background": "#FFFFFF",
+    "surface": "#F7F8F8",
+    "surfaceAlt": "#F1F3F2",
+    "textPrimary": "#17201E",
+    "textSecondary": "#66706D",
+    "divider": "#E2E6E4",
+    "accent": "#176B5B",
+    "accentSoft": "#E7F2EF",
+    "danger": "#B3261E"
+  },
+  "radiusDp": {
+    "small": 8,
+    "medium": 12,
+    "large": 18
+  },
+  "spacingDp": [
+    4,
+    8,
+    12,
+    16,
+    20,
+    24,
+    32
+  ],
+  "touchTargetDp": 48,
+  "notes": "Starter OpenWA tokens; agent may refine after latest-UI audit. No gradients, no glassmorphism."
+}

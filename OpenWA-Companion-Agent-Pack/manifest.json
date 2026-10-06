@@ -1,0 +1,32 @@
+{
+  "project": "OpenWA Companion",
+  "generated_date": "2026-10-06",
+  "purpose": "AI agent skill/prompt pack",
+  "batch_order": [
+    "01-bootstrap.md",
+    "02-embedded-node-poc.md",
+    "03-baileys-pairing-poc.md",
+    "04-event-coverage.md",
+    "05-database-sync.md",
+    "06-ui-ux.md",
+    "07-message-media.md",
+    "08-groups-updates-newsletters.md",
+    "09-calls.md",
+    "10-security-background.md",
+    "11-testing-hardening.md",
+    "12-release.md"
+  ],
+  "mandatory_read": [
+    "MASTER_SKILL.md",
+    "PROJECT_RULES.md",
+    "specs/ARCHITECTURE.md",
+    "BAILEYS_COVERAGE_MATRIX.md",
+    "FINAL_CHECKLIST.md"
+  ],
+  "policy": {
+    "external_backend": false,
+    "fake_features": false,
+    "open_source_attribution": true,
+    "refresh_latest_before_build": true
+  }
+}
