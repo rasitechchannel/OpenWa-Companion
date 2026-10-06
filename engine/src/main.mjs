@@ -427,7 +427,7 @@ async function handleCommand(cmd) {
       } else if (mimeType.startsWith('video/')) {
         await sock.sendMessage(cmd.jid, { video: data, mimetype: mimeType, caption })
       } else if (mimeType.startsWith('audio/')) {
-        await sock.sendMessage(cmd.jid, { audio: data, mimetype: mimeType, ptt: false })
+        await sock.sendMessage(cmd.jid, { audio: data, mimetype: mimeType, ptt: !!cmd.ptt })
       } else {
         await sock.sendMessage(cmd.jid, {
           document: data,
